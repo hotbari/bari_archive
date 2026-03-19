@@ -1,7 +1,8 @@
 import json
 import re
 
-import anthropic
+from openai import OpenAI
+# import anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -87,10 +88,10 @@ async def submit_interview(data: InterviewSubmit, db: AsyncSession = Depends(get
 
 async def _extract_interests(answers: dict) -> dict:
     """Use Claude to extract structured interests from interview answers."""
-    if not settings.claude_api_key:
+    if not settings.openai_api_key:
         return {"raw": answers}
 
-    client = anthropic.Anthropic(api_key=settings.claude_api_key)
+    client = OpenAI(api_key=settings.openai_api_key)
 
     prompt = f"""Based on these user interview answers about their content preferences, extract structured interest categories.
 
@@ -106,7 +107,7 @@ Return valid JSON only — no markdown fences:
 }}"""
 
     message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="gpt-4o-mini",
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
