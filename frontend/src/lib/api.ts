@@ -9,6 +9,8 @@ export interface Link {
   category_id: string | null;
   thumbnail_url: string | null;
   user_notes: string | null;
+  status: "pending" | "done";
+  created_at: string;
 }
 
 export interface Category {
@@ -77,6 +79,16 @@ export const api = {
       body: JSON.stringify({ user_notes }),
     });
     if (!res.ok) throw new Error("Failed to update link");
+    return res.json();
+  },
+
+  async updateLinkStatus(id: string, status: "pending" | "done"): Promise<Link> {
+    const res = await fetch(`${API_URL}/api/links/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error("Failed to update status");
     return res.json();
   },
 

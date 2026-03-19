@@ -18,7 +18,7 @@ export default function Onboarding() {
       // If profile already exists, skip onboarding
       const profile = await api.getProfile();
       if (profile) {
-        router.push("/");
+        router.push("/dashboard");
         return;
       }
       const qs = await api.getQuestions();
@@ -52,7 +52,7 @@ export default function Onboarding() {
     setError("");
     try {
       await api.submitInterview(answers);
-      router.push("/");
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save profile");
       setSubmitting(false);

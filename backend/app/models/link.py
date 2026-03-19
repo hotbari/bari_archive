@@ -18,6 +18,7 @@ class Link(Base):
     category_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("categories.id"))
     thumbnail_url: Mapped[str | None] = mapped_column(String(2048))
     user_notes: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | done
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

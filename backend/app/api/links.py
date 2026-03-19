@@ -3,6 +3,8 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from datetime import datetime
+
 from pydantic import BaseModel, HttpUrl
 
 from app.database import get_db
@@ -21,6 +23,7 @@ class LinkCreate(BaseModel):
 
 class LinkUpdate(BaseModel):
     user_notes: str | None = None
+    status: str | None = None  # pending | done
 
 
 class LinkResponse(BaseModel):
@@ -32,6 +35,8 @@ class LinkResponse(BaseModel):
     category_id: str | None
     thumbnail_url: str | None
     user_notes: str | None
+    status: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -118,7 +123,10 @@ async def update_link(link_id: str, update: LinkUpdate, db: AsyncSession = Depen
     link = result.scalar_one_or_none()
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
-    link.user_notes = update.user_notes
+    if "user_notes" in update.model_fields_set:
+        link.user_notes = update.user_notes
+    if "status" in update.model_fields_set:
+        link.status = update.status
     await db.commit()
     await db.refresh(link)
     return link

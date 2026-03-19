@@ -90,6 +90,7 @@ export default function LinkDetail() {
   const [imgError, setImgError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [togglingStatus, setTogglingStatus] = useState(false);
 
   useEffect(() => {
     api
@@ -116,6 +117,18 @@ export default function LinkDetail() {
       setTimeout(() => setNotesSaved(false), 2000);
     } finally {
       setSavingNotes(false);
+    }
+  }
+
+  async function handleToggleStatus() {
+    if (!link) return;
+    const newStatus = link.status === "done" ? "pending" : "done";
+    setTogglingStatus(true);
+    try {
+      const updated = await api.updateLinkStatus(link.id, newStatus);
+      setLink(updated);
+    } finally {
+      setTogglingStatus(false);
     }
   }
 
@@ -165,7 +178,7 @@ export default function LinkDetail() {
       >
         <p>{error || "Link not found"}</p>
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/dashboard")}
           style={{ padding: "0.5rem 1rem", background: "var(--primary)", color: "white" }}
         >
           Back to Dashboard
@@ -191,7 +204,7 @@ export default function LinkDetail() {
         }}
       >
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/dashboard")}
           style={{
             background: "transparent",
             color: "var(--text-muted)",
@@ -279,7 +292,7 @@ export default function LinkDetail() {
               </p>
             )}
 
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
               <span
                 style={{
                   padding: "3px 10px",
@@ -294,6 +307,23 @@ export default function LinkDetail() {
               >
                 {link.source_type}
               </span>
+              <button
+                onClick={handleToggleStatus}
+                disabled={togglingStatus}
+                style={{
+                  padding: "3px 12px",
+                  borderRadius: 4,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  background: link.status === "done" ? "#10b9811a" : "var(--surface-2)",
+                  color: link.status === "done" ? "#10b981" : "var(--text-muted)",
+                  border: `1px solid ${link.status === "done" ? "#10b98133" : "var(--border)"}`,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {link.status === "done" ? "✓ 완료" : "○ 미완료"}
+              </button>
             </div>
           </div>
         </div>
