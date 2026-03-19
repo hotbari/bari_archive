@@ -67,7 +67,7 @@ export default function Onboarding() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          height: "100vh",
+          height: "100dvh",
           gap: "1rem",
           color: "var(--text-muted)",
         }}
@@ -81,7 +81,7 @@ export default function Onboarding() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -111,6 +111,7 @@ export default function Onboarding() {
             border: "1px solid var(--border)",
             borderRadius: "var(--radius-lg)",
             padding: "2rem",
+            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.3)",
           }}
         >
           {/* Welcome header (first step only) */}

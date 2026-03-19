@@ -141,7 +141,7 @@ export default function LinkDetail() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          height: "100vh",
+          height: "100dvh",
           color: "var(--text-muted)",
         }}
       >
@@ -158,7 +158,7 @@ export default function LinkDetail() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          height: "100vh",
+          height: "100dvh",
           gap: "1rem",
           color: "var(--text-muted)",
         }}
@@ -175,7 +175,7 @@ export default function LinkDetail() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <header
         style={{
@@ -305,6 +305,7 @@ export default function LinkDetail() {
             border: "1px solid var(--border)",
             borderRadius: "var(--radius-lg)",
             padding: "1.25rem",
+            boxShadow: "var(--shadow-card)",
           }}
         >
           <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: "0.75rem" }}>My Notes</h3>
@@ -342,6 +343,7 @@ export default function LinkDetail() {
             border: "1px solid var(--border)",
             borderRadius: "var(--radius-lg)",
             padding: "1.25rem",
+            boxShadow: "var(--shadow-card)",
           }}
         >
           <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: "0.375rem" }}>
