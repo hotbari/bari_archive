@@ -106,13 +106,17 @@ Return valid JSON only — no markdown fences:
   "suggested_categories": ["category1", "category2", "category3"]
 }}"""
 
-    message = client.messages.create(
+    message = client.chat.complete.create(
         model="gpt-4o-mini",
-        max_tokens=512,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "user", "content": prompt},
+            {"role": "system", "content": "You are a helpful assistant that outputs only valid JSON."},
+            ],
+        response_format={"type": "json_object"}, # JSON 출력 보장
+        max_tokens=512
     )
 
-    response_text = message.content[0].text.strip()
+    response_text = message.choices[0].content.strip()
     response_text = re.sub(r"^```(?:json)?\s*", "", response_text)
     response_text = re.sub(r"\s*```$", "", response_text)
 
