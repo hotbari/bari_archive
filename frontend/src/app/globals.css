@@ -5,27 +5,41 @@
 }
 
 :root {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface-2: #263248;
-  --border: #334155;
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --danger: #ef4444;
-  --text: #f1f5f9;
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #1f2937;
+  --border: #2d3748;
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
+  --danger: #f87171;
+  --text: #e2e8f0;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
   --radius: 8px;
-  --radius-lg: 12px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 0 0 1.5px var(--primary), 0 6px 20px rgba(129, 140, 248, 0.1), 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 a {
@@ -39,7 +53,13 @@ button {
   border-radius: var(--radius);
   font-size: 14px;
   font-family: inherit;
-  transition: background 0.15s, opacity 0.15s, color 0.15s, border-color 0.15s;
+  transition-property: background-color, color, border-color, opacity, transform, box-shadow;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 button:disabled {
@@ -56,12 +76,14 @@ textarea {
   font-family: inherit;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.15s;
+  transition-property: border-color, box-shadow;
+  transition-duration: 0.15s;
 }
 
 input:focus,
 textarea:focus {
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.12);
 }
 
 textarea {
@@ -80,4 +102,9 @@ textarea {
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 3px;
+}
+
+/* Category tab bar — hide horizontal scrollbar */
+[role="tablist"]::-webkit-scrollbar {
+  display: none;
 }

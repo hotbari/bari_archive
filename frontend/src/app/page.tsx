@@ -206,6 +206,32 @@ function AddLinkModal({
   );
 }
 
+// ─── Delete Button ────────────────────────────────────────────────────────────
+
+function DeleteButton({ deleting, onDelete }: { deleting: boolean; onDelete: (e: React.MouseEvent) => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onDelete}
+      disabled={deleting}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        margin: "0 0.75rem 0.75rem",
+        padding: "0.375rem 0",
+        background: hovered ? "rgba(248, 113, 113, 0.08)" : "transparent",
+        color: hovered ? "var(--danger)" : "var(--text-dim)",
+        fontSize: 11,
+        border: `1px solid ${hovered ? "rgba(248, 113, 113, 0.25)" : "var(--border)"}`,
+        borderRadius: "var(--radius)",
+        minHeight: 32,
+      }}
+    >
+      {deleting ? "Deleting…" : "Delete"}
+    </button>
+  );
+}
+
 // ─── Link Card ────────────────────────────────────────────────────────────────
 
 function LinkCard({
@@ -243,13 +269,14 @@ function LinkCard({
         onMouseLeave={() => setHovered(false)}
         style={{
           background: "var(--surface)",
-          border: `1px solid ${hovered ? "var(--primary)" : "var(--border)"}`,
+          border: "1px solid var(--border)",
           borderRadius: "var(--radius-lg)",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          transform: hovered ? "translateY(-2px)" : "none",
-          transition: "border-color 0.15s, transform 0.15s",
+          transform: hovered ? "translateY(-3px)" : "none",
+          boxShadow: hovered ? "var(--shadow-card-hover)" : "var(--shadow-card)",
+          transition: "transform 0.15s ease, box-shadow 0.15s ease",
           cursor: "pointer",
           height: "100%",
         }}
@@ -375,31 +402,7 @@ function LinkCard({
         </div>
 
         {/* Delete */}
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          style={{
-            margin: "0 0.75rem 0.75rem",
-            padding: "0.35rem",
-            background: "transparent",
-            color: "var(--text-dim)",
-            fontSize: 11,
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius)",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "#ef444420";
-            (e.currentTarget as HTMLButtonElement).style.color = "var(--danger)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "#ef444440";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-            (e.currentTarget as HTMLButtonElement).style.color = "var(--text-dim)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
-          }}
-        >
-          {deleting ? "Deleting…" : "Delete"}
-        </button>
+        <DeleteButton deleting={deleting} onDelete={handleDelete} />
       </div>
     </NextLink>
   );
@@ -479,7 +482,7 @@ export default function Dashboard() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          height: "100vh",
+          height: "100dvh",
           gap: "1rem",
           color: "var(--text-muted)",
         }}
@@ -491,226 +494,184 @@ export default function Dashboard() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <header
-        style={{
-          padding: "0.875rem 1.5rem",
-          borderBottom: "1px solid var(--border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          background: "var(--surface)",
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-          <img src="/myhamdang.png" alt="Myhamdang" style={{ width: 32, height: 32, objectFit: "contain" }} />
-          <h1 style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em" }}>
-            MyArchive
-          </h1>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          style={{
-            padding: "0.5rem 1rem",
-            background: "var(--primary)",
-            color: "white",
-            fontWeight: 500,
-            fontSize: 13,
-          }}
-        >
-          + Add Link
-        </button>
-      </header>
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Sidebar */}
-        <aside
+      {/* Sticky top group: header + filter bar */}
+      <div style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--surface)" }}>
+
+        {/* Header */}
+        <header
           style={{
-            width: 210,
-            minWidth: 210,
-            borderRight: "1px solid var(--border)",
-            padding: "1rem 0.75rem",
+            padding: "0.875rem 1.5rem",
+            borderBottom: "1px solid var(--border)",
             display: "flex",
-            flexDirection: "column",
-            gap: "1.5rem",
-            overflowY: "auto",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          {/* Categories */}
-          <div>
-            <p
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--text-dim)",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "0.5rem",
-                paddingLeft: "0.5rem",
-              }}
-            >
-              Categories
-            </p>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 1 }}>
-              <li>
-                <button
-                  onClick={() => handleCategoryChange("")}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "0.4rem 0.6rem",
-                    borderRadius: "var(--radius)",
-                    background: selectedCategory === "" ? "#6366f122" : "transparent",
-                    color: selectedCategory === "" ? "var(--primary)" : "var(--text-muted)",
-                    fontSize: 13,
-                    fontWeight: selectedCategory === "" ? 600 : 400,
-                  }}
-                >
-                  All
-                </button>
-              </li>
-              {categories.map((cat) => (
-                <li key={cat.id}>
-                  <button
-                    onClick={() => handleCategoryChange(cat.id)}
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "0.4rem 0.6rem",
-                      borderRadius: "var(--radius)",
-                      background: selectedCategory === cat.id ? "#6366f122" : "transparent",
-                      color: selectedCategory === cat.id ? "var(--primary)" : "var(--text-muted)",
-                      fontSize: 13,
-                      fontWeight: selectedCategory === cat.id ? 600 : 400,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {cat.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+            <img src="/myhamdang.png" alt="Myhamdang" style={{ width: 32, height: 32, objectFit: "contain" }} />
+            <h1 style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em" }}>
+              MyArchive
+            </h1>
           </div>
-
-          {/* Source Type */}
-          <div>
-            <p
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--text-dim)",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "0.5rem",
-                paddingLeft: "0.5rem",
-              }}
-            >
-              Source Type
-            </p>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 1 }}>
-              {SOURCE_TYPES.map((s) => (
-                <li key={s.value}>
-                  <button
-                    onClick={() => handleSourceChange(s.value)}
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "0.4rem 0.6rem",
-                      borderRadius: selectedSource === s.value ? "0 var(--radius) var(--radius) 0" : "var(--radius)",
-                      background: selectedSource === s.value ? "var(--surface-2)" : "transparent",
-                      color: selectedSource === s.value ? "var(--text)" : "var(--text-muted)",
-                      fontSize: 13,
-                      fontWeight: selectedSource === s.value ? 600 : 400,
-                      borderLeft:
-                        selectedSource === s.value
-                          ? "3px solid var(--primary)"
-                          : "3px solid transparent",
-                    }}
-                  >
-                    {s.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main
-          style={{
-            flex: 1,
-            padding: "1.25rem 1.5rem",
-            overflowY: "auto",
-          }}
-        >
-          <div
+          <button
+            onClick={() => setShowAddModal(true)}
             style={{
-              marginBottom: "1rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
+              padding: "0.5rem 1rem",
+              background: "var(--primary)",
+              color: "white",
+              fontWeight: 600,
+              fontSize: 13,
+              letterSpacing: "0.01em",
             }}
           >
-            <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
-              {filterLoading ? "Loading…" : `${links.length} ${links.length === 1 ? "link" : "links"}`}
-            </p>
-          </div>
+            + Add Link
+          </button>
+        </header>
 
-          {links.length === 0 ? (
-            <div
+        {/* Filter bar */}
+        <div style={{ borderBottom: "1px solid var(--border)", padding: "0 1.5rem" }}>
+
+          {/* Row 1: Category tabs */}
+          <div
+            role="tablist"
+            aria-label="카테고리 필터"
+            style={{
+              display: "flex",
+              gap: 2,
+              overflowX: "auto",
+              scrollbarWidth: "none",
+              padding: "0.625rem 0 0",
+            }}
+          >
+            <button
+              role="tab"
+              aria-selected={selectedCategory === ""}
+              onClick={() => handleCategoryChange("")}
               style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: 320,
-                gap: "0.75rem",
-                color: "var(--text-muted)",
+                padding: "0.375rem 0.875rem",
+                borderRadius: 0,
+                fontSize: 13,
+                borderBottom: selectedCategory === "" ? "2px solid var(--primary)" : "2px solid transparent",
+                color: selectedCategory === "" ? "var(--primary)" : "var(--text-muted)",
+                fontWeight: selectedCategory === "" ? 600 : 400,
+                background: "transparent",
+                whiteSpace: "nowrap",
               }}
             >
-              <img src="/myhamdang.png" alt="Myhamdang" style={{ width: 160, height: 160, objectFit: "contain", filter: "grayscale(100%)", opacity: 0.3 }} />
-              <p style={{ fontSize: 15 }}>No links saved yet</p>
+              All
+            </button>
+            {categories.map((cat) => (
               <button
-                onClick={() => setShowAddModal(true)}
+                role="tab"
+                key={cat.id}
+                aria-selected={selectedCategory === cat.id}
+                onClick={() => handleCategoryChange(cat.id)}
                 style={{
-                  padding: "0.5rem 1rem",
-                  background: "var(--primary)",
-                  color: "white",
-                  marginTop: "0.25rem",
-                  fontWeight: 500,
+                  padding: "0.375rem 0.875rem",
+                  borderRadius: 0,
+                  fontSize: 13,
+                  borderBottom: selectedCategory === cat.id ? "2px solid var(--primary)" : "2px solid transparent",
+                  color: selectedCategory === cat.id ? "var(--primary)" : "var(--text-muted)",
+                  fontWeight: selectedCategory === cat.id ? 600 : 400,
+                  background: "transparent",
+                  whiteSpace: "nowrap",
                 }}
               >
-                Add your first link
+                {cat.name}
               </button>
-            </div>
-          ) : (
-            <div
+            ))}
+          </div>
+
+          {/* Row 2: Source type chips */}
+          <div style={{ display: "flex", gap: "0.375rem", padding: "0.5rem 0 0.625rem", flexWrap: "wrap" }}>
+            {SOURCE_TYPES.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => handleSourceChange(s.value)}
+                aria-pressed={selectedSource === s.value}
+                style={{
+                  padding: "0.2rem 0.75rem",
+                  borderRadius: 20,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  border: `1px solid ${selectedSource === s.value ? "var(--primary)" : "var(--border)"}`,
+                  background: selectedSource === s.value ? "rgba(129,140,248,0.1)" : "transparent",
+                  color: selectedSource === s.value ? "var(--primary)" : "var(--text-dim)",
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+        </div>
+      </div>
+
+      {/* Main content — full width */}
+      <main style={{ flex: 1, padding: "1.25rem 1.5rem", overflowY: "auto" }}>
+        <div
+          style={{
+            marginBottom: "1rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+          }}
+        >
+          <p style={{ color: "var(--text-muted)", fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+            {filterLoading ? "Loading…" : `${links.length} ${links.length === 1 ? "link" : "links"}`}
+          </p>
+        </div>
+
+        {links.length === 0 ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: 320,
+              gap: "0.75rem",
+              color: "var(--text-muted)",
+            }}
+          >
+            <img src="/myhamdang.png" alt="Myhamdang" style={{ width: 160, height: 160, objectFit: "contain", filter: "grayscale(100%)", opacity: 0.3 }} />
+            <p style={{ fontSize: 15 }}>No links saved yet</p>
+            <button
+              onClick={() => setShowAddModal(true)}
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-                gap: "1rem",
-                opacity: filterLoading ? 0.5 : 1,
-                transition: "opacity 0.2s",
+                padding: "0.5rem 1rem",
+                background: "var(--primary)",
+                color: "white",
+                marginTop: "0.25rem",
+                fontWeight: 500,
               }}
             >
-              {links.map((link) => (
-                <LinkCard
-                  key={link.id}
-                  link={link}
-                  categoryName={getCategoryName(link.category_id)}
-                  onDelete={handleLinkDeleted}
-                />
-              ))}
-            </div>
-          )}
-        </main>
-      </div>
+              Add your first link
+            </button>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              gap: "1rem",
+              opacity: filterLoading ? 0.5 : 1,
+              transition: "opacity 0.2s",
+            }}
+          >
+            {links.map((link) => (
+              <LinkCard
+                key={link.id}
+                link={link}
+                categoryName={getCategoryName(link.category_id)}
+                onDelete={handleLinkDeleted}
+              />
+            ))}
+          </div>
+        )}
+      </main>
 
       {showAddModal && (
         <AddLinkModal onClose={() => setShowAddModal(false)} onAdded={handleLinkAdded} />
