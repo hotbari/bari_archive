@@ -52,7 +52,7 @@ async def get_questions():
     return {"questions": INTERVIEW_QUESTIONS}
 
 
-@router.get("/", response_model=ProfileResponse | None)
+@router.get("", response_model=ProfileResponse | None)
 async def get_profile(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(UserProfile).order_by(UserProfile.created_at.desc()).limit(1)

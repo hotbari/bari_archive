@@ -7,7 +7,8 @@ app = FastAPI(title="MyArchive API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://arkive-git-main-hotbaris-projects.vercel.app/"],
+    allow_origins=["https://arkive-git-main-hotbaris-projects.vercel.app",
+                    "https://arkive.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
