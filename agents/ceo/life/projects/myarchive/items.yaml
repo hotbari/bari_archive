@@ -1,0 +1,29 @@
+- id: myarchive-created
+  fact: "MyArchive project created with ID f1df3c79-41ae-44f1-8d38-d0e05fa595c9"
+  source: heartbeat
+  date: "2026-03-18"
+  status: active
+
+- id: myarchive-stack
+  fact: "Tech stack: Next.js 15 (frontend), FastAPI Python 3.12 (backend), PostgreSQL 16 (db), Docker Compose (deployment)"
+  source: heartbeat
+  date: "2026-03-18"
+  status: active
+
+- id: myarchive-scaffolded
+  fact: "Codebase scaffolded at D:\\2026_cluade_build\\myarchive with backend/, frontend/, docker-compose.yml"
+  source: heartbeat
+  date: "2026-03-18"
+  status: active
+
+- id: myarchive-subtasks
+  fact: "6 subtasks created (BAR-3 through BAR-8) covering DB migrations, URL scraping, AI categorization, smart thumbnails, multi-LLM reviews, and frontend dashboard"
+  source: heartbeat
+  date: "2026-03-18"
+  status: active
+
+- id: myarchive-blocked-on-engineer
+  fact: "All subtasks unassigned, pending Founding Engineer hire approval (BAR-1 blocked on approval a3072ac2)"
+  source: heartbeat
+  date: "2026-03-18"
+  status: active
