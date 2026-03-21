@@ -120,9 +120,25 @@ export default function LinkDetail() {
     }
   }
 
+  function getNextStatus(current: string): "pending" | "in_progress" | "done" {
+    if (current === "pending") return "in_progress";
+    if (current === "in_progress") return "done";
+    return "pending";
+  }
+
+  function getStatusLabel(status: string, sourceType: string): string {
+    const labels: Record<string, Record<string, string>> = {
+      ecommerce: { pending: "To Buy",   in_progress: "Considering", done: "Purchased" },
+      news:      { pending: "Unread",   in_progress: "Reading",     done: "Read" },
+      social:    { pending: "To Watch", in_progress: "Watching",    done: "Watched" },
+      other:     { pending: "To Do",    in_progress: "In Progress", done: "Done" },
+    };
+    return (labels[sourceType] ?? labels.other)[status] ?? status;
+  }
+
   async function handleToggleStatus() {
     if (!link) return;
-    const newStatus = link.status === "done" ? "pending" : "done";
+    const newStatus = getNextStatus(link.status);
     setTogglingStatus(true);
     try {
       const updated = await api.updateLinkStatus(link.id, newStatus);
@@ -232,6 +248,7 @@ export default function LinkDetail() {
       </header>
 
       <div
+        className="ld-page"
         style={{
           flex: 1,
           maxWidth: 860,
@@ -245,6 +262,7 @@ export default function LinkDetail() {
       >
         {/* Thumbnail + meta */}
         <div
+          className="ld-hero"
           style={{
             display: "grid",
             gridTemplateColumns: link.thumbnail_url && !imgError ? "280px 1fr" : "1fr",
@@ -263,6 +281,7 @@ export default function LinkDetail() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                className="ld-thumbnail"
                 src={link.thumbnail_url}
                 alt={link.title ?? "thumbnail"}
                 onError={() => setImgError(true)}
@@ -273,7 +292,7 @@ export default function LinkDetail() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
             <div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.3, marginBottom: "0.375rem" }}>
+              <h2 className="ld-title" style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.3, marginBottom: "0.375rem" }}>
                 {link.title ?? getDomain(link.url)}
               </h2>
               <a
@@ -315,14 +334,32 @@ export default function LinkDetail() {
                   borderRadius: 4,
                   fontSize: 11,
                   fontWeight: 700,
-                  background: link.status === "done" ? "#10b9811a" : "var(--surface-2)",
-                  color: link.status === "done" ? "#10b981" : "var(--text-muted)",
-                  border: `1px solid ${link.status === "done" ? "#10b98133" : "var(--border)"}`,
+                  background: link.status === "done"
+                    ? "#10b9811a"
+                    : link.status === "in_progress"
+                    ? "#f59e0b1a"
+                    : "var(--surface-2)",
+                  color: link.status === "done"
+                    ? "#10b981"
+                    : link.status === "in_progress"
+                    ? "#f59e0b"
+                    : "var(--text-muted)",
+                  border: `1px solid ${
+                    link.status === "done"
+                      ? "#10b98133"
+                      : link.status === "in_progress"
+                      ? "#f59e0b33"
+                      : "var(--border)"
+                  }`,
                   cursor: "pointer",
                   transition: "all 0.15s ease",
                 }}
               >
-                {link.status === "done" ? "✓ 완료" : "○ 미완료"}
+                {link.status === "done"
+                  ? `✓ ${getStatusLabel("done", link.source_type)}`
+                  : link.status === "in_progress"
+                  ? `● ${getStatusLabel("in_progress", link.source_type)}`
+                  : `○ ${getStatusLabel("pending", link.source_type)}`}
               </button>
             </div>
           </div>

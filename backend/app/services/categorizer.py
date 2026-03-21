@@ -15,18 +15,23 @@ async def classify_link(
     title: str | None,
     description: str | None,
     source_type: str,
+    user_id: str | None = None,
 ) -> str | None:
     """Classify a link into a category using Claude. Creates category on the fly if needed."""
     if not settings.claude_api_key:
         return None
 
-    # Fetch existing categories and user profile concurrently
-    cats_result = await db.execute(select(Category))
+    # Fetch existing categories and user profile for this user
+    cats_query = select(Category)
+    if user_id:
+        cats_query = cats_query.where(Category.user_id == user_id)
+    cats_result = await db.execute(cats_query)
     categories = cats_result.scalars().all()
 
-    profile_result = await db.execute(
-        select(UserProfile).order_by(UserProfile.created_at.desc()).limit(1)
-    )
+    profile_query = select(UserProfile).order_by(UserProfile.created_at.desc()).limit(1)
+    if user_id:
+        profile_query = select(UserProfile).where(UserProfile.user_id == user_id).order_by(UserProfile.created_at.desc()).limit(1)
+    profile_result = await db.execute(profile_query)
     profile = profile_result.scalar_one_or_none()
 
     existing_cats = [{"name": c.name, "description": c.description} for c in categories]
@@ -81,8 +86,11 @@ Respond with valid JSON only — no markdown fences:
     if not category_name:
         return None
 
-    # Find or create the category
-    result = await db.execute(select(Category).where(Category.name == category_name))
+    # Find or create the category for this user
+    cat_query = select(Category).where(Category.name == category_name)
+    if user_id:
+        cat_query = cat_query.where(Category.user_id == user_id)
+    result = await db.execute(cat_query)
     category = result.scalar_one_or_none()
 
     if not category:
@@ -90,6 +98,7 @@ Respond with valid JSON only — no markdown fences:
             name=category_name,
             description=data.get("description"),
             keywords=data.get("keywords"),
+            user_id=user_id,
         )
         db.add(category)
         await db.flush()

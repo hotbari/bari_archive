@@ -27,8 +27,7 @@ export default function LandingPage() {
       <nav className="lp-nav">
         <span className="lp-wordmark">Arkive</span>
         <div className="lp-nav-actions">
-          <Link href="/dashboard" className="lp-nav-login">Log In</Link>
-          <Link href="/dashboard" className="lp-nav-cta">Try Arkive</Link>
+          <Link href="/api/auth/signin?callbackUrl=/dashboard" className="lp-nav-login">Log In</Link>
         </div>
       </nav>
 
@@ -52,8 +51,7 @@ export default function LandingPage() {
             so nothing slips through.
           </p>
           <div className="lp-hero-cta-group lp-hero-in" style={{ animationDelay: "0.52s" }}>
-            <Link href="/dashboard" className="lp-cta-primary">Save Your First Link</Link>
-            <p className="lp-hero-note">Free. No account required.</p>
+            <Link href="/api/auth/signin?callbackUrl=/dashboard" className="lp-cta-primary">Sign in with Google</Link>
           </div>
         </div>
       </section>
@@ -98,32 +96,37 @@ export default function LandingPage() {
       {/* Features */}
       <section className="lp-features">
         <p className="lp-section-label lp-reveal">What it does</p>
-        <div className="lp-features-grid">
-          <article className="lp-feature-card lp-feature-card--indigo lp-reveal" data-delay="0">
-            <span className="lp-feature-index" style={{ color: "#818cf8" }}>01</span>
-            <h3>AI Categorization</h3>
-            <p>Every link is classified by source — e-commerce, social, news — then sorted into topic clusters your reading habits reveal over time.</p>
-          </article>
-          <article className="lp-feature-card lp-feature-card--cyan lp-reveal" data-delay="1">
-            <span className="lp-feature-index" style={{ color: "#22d3ee" }}>02</span>
-            <h3>Smart Thumbnails</h3>
-            <p>Not every page has a great preview. Arkive scores candidate images and selects the one that actually represents the content.</p>
-          </article>
-          <article className="lp-feature-card lp-feature-card--emerald lp-reveal" data-delay="2">
-            <span className="lp-feature-index" style={{ color: "#34d399" }}>03</span>
-            <h3>Multi-LLM Reviews</h3>
-            <p>Get perspectives from Claude, Gemini, and GPT simultaneously — so no single model frames your understanding.</p>
-          </article>
+        <div className="lp-features-list">
+          <div className="lp-feature-row lp-reveal" data-delay="0">
+            <span className="lp-feature-index">01</span>
+            <div className="lp-feature-body">
+              <h3>AI Categorization</h3>
+              <p>Every link is classified by source — e-commerce, social, news — then sorted into topic clusters your reading habits reveal over time.</p>
+            </div>
+          </div>
+          <div className="lp-feature-row lp-reveal" data-delay="1">
+            <span className="lp-feature-index">02</span>
+            <div className="lp-feature-body">
+              <h3>Smart Thumbnails</h3>
+              <p>Not every page has a great preview. Arkive scores candidate images and selects the one that actually represents the content.</p>
+            </div>
+          </div>
+          <div className="lp-feature-row lp-reveal" data-delay="2">
+            <span className="lp-feature-index">03</span>
+            <div className="lp-feature-body">
+              <h3>Multi-LLM Reviews</h3>
+              <p>Get perspectives from Claude, Gemini, and GPT simultaneously — so no single model frames your understanding.</p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Footer CTA */}
       <section className="lp-footer-cta">
         <h2 className="lp-reveal">Your archive is waiting.</h2>
-        <Link href="/dashboard" className="lp-cta-primary lp-reveal" data-delay="1">
-          Start Archiving — It&rsquo;s Free
+        <Link href="/api/auth/signin?callbackUrl=/dashboard" className="lp-cta-primary lp-reveal" data-delay="1">
+          Arkive
         </Link>
-        <p className="lp-footer-note lp-reveal" data-delay="2">No account required to start.</p>
       </section>
     </main>
   );

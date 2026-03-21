@@ -101,7 +101,7 @@ export default function Onboarding() {
           }}
         >
           <img src="/myhamdang.png" alt="Myhamdang" style={{ width: 36, height: 36, objectFit: "contain" }} />
-          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" }}>MyArchive</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" }}>Arkive</h1>
         </div>
 
         {/* Card */}

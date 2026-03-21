@@ -837,6 +837,19 @@ export default function Dashboard() {
           </div>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <button
+              onClick={() => router.push("/insights")}
+              style={{
+                padding: "0.5rem 0.875rem",
+                background: "transparent",
+                color: "var(--text-muted)",
+                fontWeight: 500,
+                fontSize: 13,
+                boxShadow: "inset 0 0 0 1px var(--border)",
+              }}
+            >
+              Insights
+            </button>
+            <button
               onClick={() => setShowAddModal(true)}
               style={{
                 padding: "0.5rem 1rem",
