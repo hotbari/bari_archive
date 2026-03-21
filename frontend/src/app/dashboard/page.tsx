@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import NextLink from "next/link";
+import { signOut } from "next-auth/react";
 import { api, Link as LinkType, Category } from "@/lib/api";
+import type { InsightData } from "@/types/insights";
 
 const SOURCE_TYPES = [
   { value: "", label: "All Sources" },
@@ -35,12 +36,12 @@ function getDomain(url: string): string {
   }
 }
 
-function getStatusLabels(sourceType: string): { pending: string; done: string } {
+function getStatusLabels(sourceType: string): { pending: string; in_progress: string; done: string } {
   switch (sourceType) {
-    case "ecommerce": return { pending: "구매 전", done: "구매 완료" };
-    case "news":      return { pending: "읽기 전", done: "읽음" };
-    case "social":    return { pending: "보기 전", done: "봄" };
-    default:          return { pending: "할 일",   done: "완료" };
+    case "ecommerce": return { pending: "To Buy",      in_progress: "Considering", done: "Purchased" };
+    case "news":      return { pending: "Unread",      in_progress: "Reading",     done: "Read" };
+    case "social":    return { pending: "To Watch",    in_progress: "Watching",    done: "Watched" };
+    default:          return { pending: "To Do",       in_progress: "In Progress", done: "Done" };
   }
 }
 
@@ -243,7 +244,100 @@ function DeleteButton({ deleting, onDelete }: { deleting: boolean; onDelete: (e:
   );
 }
 
+// ─── Insight Panel ────────────────────────────────────────────────────────────
+
+function InsightPanel({ insight, onViewAll }: {
+  insight: InsightData;
+  onViewAll: () => void;
+}) {
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem("mya_insight_panel") === "collapsed"
+  );
+
+  function toggleCollapse() {
+    const next = !collapsed;
+    setCollapsed(next);
+    if (next) {
+      localStorage.setItem("mya_insight_panel", "collapsed");
+    } else {
+      localStorage.removeItem("mya_insight_panel");
+    }
+  }
+
+  return (
+    <div style={{
+      borderBottom: "1px solid var(--border)",
+      background: "var(--surface-2)",
+      padding: "0.625rem 1.5rem",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          나의 관심사
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {collapsed && (
+            <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+              {insight.themes.slice(0, 2).map((t) => (
+                <span key={t.name} style={{
+                  padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+                  background: "rgba(99,102,241,0.12)", color: "var(--primary)",
+                  border: "1px solid rgba(99,102,241,0.2)",
+                }}>
+                  {t.name}
+                </span>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={onViewAll}
+            style={{ fontSize: 11, color: "var(--primary)", background: "transparent", padding: 0 }}
+          >
+            전체 보기 →
+          </button>
+          <button
+            onClick={toggleCollapse}
+            style={{ fontSize: 11, color: "var(--text-dim)", background: "transparent", padding: 0 }}
+          >
+            {collapsed ? "∨" : "∧"}
+          </button>
+        </div>
+      </div>
+
+      {!collapsed && (
+        <div style={{ marginTop: "0.5rem" }}>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6, marginBottom: "0.5rem" }}>
+            {insight.portrait.split(". ").slice(0, 2).join(". ") + "."}
+          </p>
+          <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+            {insight.themes.map((t) => (
+              <span key={t.name} style={{
+                padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+                background: "rgba(99,102,241,0.12)", color: "var(--primary)",
+                border: "1px solid rgba(99,102,241,0.2)",
+              }}>
+                {t.name}
+              </span>
+            ))}
+            {insight.emerging && (
+              <span style={{
+                padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+                background: "rgba(16,185,129,0.1)", color: "#10b981",
+                border: "1px solid rgba(16,185,129,0.2)",
+              }}>
+                ↑ 부상중
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Link Card ────────────────────────────────────────────────────────────────
+
+const LONG_PRESS_DURATION = 600; // ms
+const LONG_PRESS_MOVE_THRESHOLD = 6; // px
 
 function LinkCard({
   link,
@@ -256,7 +350,7 @@ function LinkCard({
   link: LinkType;
   categoryName?: string;
   onDelete: (id: string) => void;
-  onStatusChange: (id: string, status: "pending" | "done") => void;
+  onStatusChange: (id: string, status: "pending" | "in_progress" | "done") => void;
   isFirstCard?: boolean;
   showSwipeHint?: boolean;
 }) {
@@ -267,11 +361,22 @@ function LinkCard({
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [isLongPressing, setIsLongPressing] = useState(false);
   const startXRef = useRef<number | null>(null);
   const hasDraggedRef = useRef(false);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const statusLabels = getStatusLabels(link.source_type);
   const isDone = link.status === "done";
+  const isInProgress = link.status === "in_progress";
+
+  function cancelLongPress() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setIsLongPressing(false);
+  }
 
   function onPointerDown(e: React.PointerEvent) {
     // Only primary button (left click / touch)
@@ -279,19 +384,38 @@ function LinkCard({
     startXRef.current = e.clientX;
     hasDraggedRef.current = false;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+
+    // Start long-press timer
+    longPressTimerRef.current = setTimeout(async () => {
+      longPressTimerRef.current = null;
+      if (hasDraggedRef.current) return; // swipe in progress, ignore
+      setIsLongPressing(false);
+      if (link.status === "in_progress") return; // already in_progress
+      setUpdatingStatus(true);
+      try {
+        await api.updateLinkStatus(link.id, "in_progress");
+        onStatusChange(link.id, "in_progress");
+      } finally {
+        setUpdatingStatus(false);
+      }
+    }, LONG_PRESS_DURATION);
+
+    setIsLongPressing(true);
   }
 
   function onPointerMove(e: React.PointerEvent) {
     if (startXRef.current === null) return;
     const delta = e.clientX - startXRef.current;
-    if (Math.abs(delta) > 6) {
+    if (Math.abs(delta) > LONG_PRESS_MOVE_THRESHOLD) {
       hasDraggedRef.current = true;
+      cancelLongPress();
       setIsDragging(true);
       setDragX(delta);
     }
   }
 
   async function onPointerUp(e: React.PointerEvent) {
+    cancelLongPress();
     const delta = dragX;
     setDragX(0);
     setIsDragging(false);
@@ -392,19 +516,20 @@ function LinkCard({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={() => { setDragX(0); setIsDragging(false); startXRef.current = null; }}
+        onPointerCancel={() => { cancelLongPress(); setDragX(0); setIsDragging(false); startXRef.current = null; }}
         style={{
           background: "var(--surface)",
-          border: `1px solid ${isDone ? "#10b98133" : "var(--border)"}`,
+          border: `1px solid ${isDone ? "#10b98133" : isInProgress ? "#f59e0b33" : isLongPressing ? "#f59e0b55" : "var(--border)"}`,
+          outline: isLongPressing ? "2px solid #f59e0b88" : "none",
           borderRadius: "var(--radius-lg)",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
           transform: isDragging
             ? `translateX(${Math.sign(dragX) * Math.min(Math.abs(dragX), 120)}px)`
-            : hovered ? "translateY(-3px)" : "none",
+            : isLongPressing ? "scale(0.97)" : hovered ? "translateY(-3px)" : "none",
           boxShadow: hovered && !isDragging ? "var(--shadow-card-hover)" : "var(--shadow-card)",
-          transition: isDragging ? "none" : "transform 0.15s ease, box-shadow 0.15s ease",
+          transition: isDragging ? "none" : "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
           cursor: isDragging ? "grabbing" : "pointer",
           height: "100%",
           userSelect: "none",
@@ -474,6 +599,25 @@ function LinkCard({
               }}
             >
               ✓ {statusLabels.done}
+            </div>
+          )}
+          {isInProgress && (
+            <div
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                background: "#f59e0b",
+                color: "white",
+                borderRadius: 12,
+                padding: "2px 8px",
+                fontSize: 10,
+                fontWeight: 700,
+                lineHeight: 1.6,
+                letterSpacing: "0.03em",
+              }}
+            >
+              ● {statusLabels.in_progress}
             </div>
           )}
         </div>
@@ -572,12 +716,13 @@ export default function Dashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSource, setSelectedSource] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<"" | "pending" | "done">("");
+  const [selectedStatus, setSelectedStatus] = useState<"" | "pending" | "in_progress" | "done">("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filterLoading, setFilterLoading] = useState(false);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const [insight, setInsight] = useState<InsightData | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -593,6 +738,9 @@ export default function Dashboard() {
       setLinks(linksData);
       setCategories(catsData);
       setLoading(false);
+      if (linksData.length >= 5) {
+        api.getInsights().then(setInsight);
+      }
       if (!localStorage.getItem("mya_swipe_hint") && linksData.length > 0) {
         setTimeout(() => {
           setShowSwipeHint(true);
@@ -635,7 +783,7 @@ export default function Dashboard() {
     setLinks((prev) => prev.filter((l) => l.id !== id));
   }
 
-  function handleStatusChange(id: string, status: "pending" | "done") {
+  function handleStatusChange(id: string, status: "pending" | "in_progress" | "done") {
     setLinks((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
   }
 
@@ -682,23 +830,44 @@ export default function Dashboard() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
             <img src="/myhamdang.png" alt="Myhamdang" style={{ width: 32, height: 32, objectFit: "contain" }} />
             <h1 style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em" }}>
-              MyArchive
+              Arkive
             </h1>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-              padding: "0.5rem 1rem",
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 600,
-              fontSize: 13,
-              letterSpacing: "0.01em",
-            }}
-          >
-            + Add Link
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                padding: "0.5rem 1rem",
+                background: "var(--primary)",
+                color: "white",
+                fontWeight: 600,
+                fontSize: 13,
+                letterSpacing: "0.01em",
+              }}
+            >
+              + Add Link
+            </button>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              style={{
+                padding: "0.5rem 0.75rem",
+                background: "transparent",
+                color: "var(--text-dim)",
+                fontSize: 12,
+                border: "1px solid var(--border)",
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </header>
+
+        {insight && (
+          <InsightPanel
+            insight={insight}
+            onViewAll={() => router.push("/insights")}
+          />
+        )}
 
         {/* Filter bar */}
         <div style={{ borderBottom: "1px solid var(--border)", padding: "0 1.5rem" }}>
@@ -779,10 +948,10 @@ export default function Dashboard() {
             <span style={{ width: 1, height: 14, background: "var(--border)", margin: "0 0.125rem" }} />
 
             {/* Status filter chips */}
-            {(["", "pending", "done"] as const).map((s) => {
-              const label = s === "" ? "All" : s === "pending" ? "To Do" : "Done";
+            {(["", "pending", "in_progress", "done"] as const).map((s) => {
+              const label = s === "" ? "All" : s === "pending" ? "To Do" : s === "in_progress" ? "In Progress" : "Done";
               const active = selectedStatus === s;
-              const color = s === "done" ? "#10b981" : s === "pending" ? "#94a3b8" : undefined;
+              const color = s === "done" ? "#10b981" : s === "in_progress" ? "#f59e0b" : s === "pending" ? "#94a3b8" : undefined;
               return (
                 <button
                   key={s}
