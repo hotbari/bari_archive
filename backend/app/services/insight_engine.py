@@ -113,7 +113,7 @@ async def generate_insight(db: AsyncSession, user_id: str) -> dict | None:
 - Last 30 days vs prior period:
 {chr(10).join(temporal_lines) or "  (none)"}
 - User notes sample (recent):
-{json.dumps(notes[:10], ensure_ascii=False) if notes else "  (none)"}
+{json.dumps(notes[:20], ensure_ascii=False) if notes else "  (none)"}
 - Stalled by category (>14 days without action):
 {chr(10).join(stalled_lines) or "  (none)"}
 

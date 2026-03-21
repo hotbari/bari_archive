@@ -723,6 +723,7 @@ export default function Dashboard() {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   const [insight, setInsight] = useState<InsightData | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -739,7 +740,8 @@ export default function Dashboard() {
       setCategories(catsData);
       setLoading(false);
       if (linksData.length >= 5) {
-        api.getInsights().then(setInsight);
+        setInsightLoading(true);
+        api.getInsights().then((data) => { setInsight(data); setInsightLoading(false); });
       }
       if (!localStorage.getItem("mya_swipe_hint") && linksData.length > 0) {
         setTimeout(() => {
@@ -862,6 +864,12 @@ export default function Dashboard() {
           </div>
         </header>
 
+        {insightLoading && !insight && (
+          <div style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)", padding: "0.75rem 1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <div style={{ height: 10, width: "60%", background: "var(--border)", borderRadius: 4, animation: "pulse 1.5s ease-in-out infinite" }} />
+            <div style={{ height: 10, width: "40%", background: "var(--border)", borderRadius: 4, animation: "pulse 1.5s ease-in-out infinite" }} />
+          </div>
+        )}
         {insight && (
           <InsightPanel
             insight={insight}
