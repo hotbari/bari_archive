@@ -9,11 +9,24 @@ from pydantic import BaseModel, HttpUrl
 
 from app.database import get_db
 from app.models.link import Link, LinkImage
+from app.models.user import User
+from app.models.insight import InsightCache
+from app.dependencies.auth import get_current_user
 from app.services.categorizer import classify_link
 from app.services.scraper import scrape_url
 from app.services.thumbnail_selector import select_thumbnail
 
 router = APIRouter()
+
+
+async def _invalidate_insight_cache(db: AsyncSession, user_id: str) -> None:
+    result = await db.execute(
+        select(InsightCache).where(InsightCache.user_id == user_id)
+    )
+    cached = result.scalar_one_or_none()
+    if cached:
+        await db.delete(cached)
+        await db.commit()
 
 
 class LinkCreate(BaseModel):
@@ -23,7 +36,7 @@ class LinkCreate(BaseModel):
 
 class LinkUpdate(BaseModel):
     user_notes: str | None = None
-    status: str | None = None  # pending | done
+    status: str | None = None  # pending | in_progress | done
 
 
 class LinkResponse(BaseModel):
@@ -43,7 +56,11 @@ class LinkResponse(BaseModel):
 
 
 @router.post("/", response_model=LinkResponse)
-async def create_link(link: LinkCreate, db: AsyncSession = Depends(get_db)):
+async def create_link(
+    link: LinkCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     url_str = str(link.url)
     meta = await scrape_url(url_str)
 
@@ -54,6 +71,7 @@ async def create_link(link: LinkCreate, db: AsyncSession = Depends(get_db)):
             title=meta.title,
             description=meta.description,
             source_type=meta.source_type,
+            user_id=current_user.id,
         ),
         select_thumbnail(
             title=meta.title,
@@ -72,6 +90,7 @@ async def create_link(link: LinkCreate, db: AsyncSession = Depends(get_db)):
         category_id=category_id,
         thumbnail_url=thumbnail_url,
         user_notes=link.user_notes,
+        user_id=current_user.id,
     )
     db.add(new_link)
     await db.flush()  # populate new_link.id before inserting images
@@ -90,6 +109,7 @@ async def create_link(link: LinkCreate, db: AsyncSession = Depends(get_db)):
 
     await db.commit()
     await db.refresh(new_link)
+    await _invalidate_insight_cache(db, current_user.id)
     return new_link
 
 
@@ -98,8 +118,9 @@ async def list_links(
     category_id: str | None = None,
     source_type: str | None = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    query = select(Link).order_by(Link.created_at.desc())
+    query = select(Link).where(Link.user_id == current_user.id).order_by(Link.created_at.desc())
     if category_id:
         query = query.where(Link.category_id == category_id)
     if source_type:
@@ -109,8 +130,14 @@ async def list_links(
 
 
 @router.get("/{link_id}", response_model=LinkResponse)
-async def get_link(link_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Link).where(Link.id == link_id))
+async def get_link(
+    link_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Link).where(Link.id == link_id, Link.user_id == current_user.id)
+    )
     link = result.scalar_one_or_none()
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
@@ -118,8 +145,15 @@ async def get_link(link_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{link_id}", response_model=LinkResponse)
-async def update_link(link_id: str, update: LinkUpdate, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Link).where(Link.id == link_id))
+async def update_link(
+    link_id: str,
+    update: LinkUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Link).where(Link.id == link_id, Link.user_id == current_user.id)
+    )
     link = result.scalar_one_or_none()
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
@@ -129,15 +163,23 @@ async def update_link(link_id: str, update: LinkUpdate, db: AsyncSession = Depen
         link.status = update.status
     await db.commit()
     await db.refresh(link)
+    await _invalidate_insight_cache(db, current_user.id)
     return link
 
 
 @router.delete("/{link_id}")
-async def delete_link(link_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Link).where(Link.id == link_id))
+async def delete_link(
+    link_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Link).where(Link.id == link_id, Link.user_id == current_user.id)
+    )
     link = result.scalar_one_or_none()
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
     await db.delete(link)
     await db.commit()
+    await _invalidate_insight_cache(db, current_user.id)
     return {"deleted": True}
