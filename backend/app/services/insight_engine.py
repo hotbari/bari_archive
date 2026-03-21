@@ -3,7 +3,7 @@ import json
 import re
 from datetime import datetime, timedelta
 
-import anthropic
+import openai
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,17 +18,17 @@ def _strip_fences(text: str) -> str:
     return text.strip()
 
 
-def _call_claude(prompt: str) -> dict | None:
-    if not settings.claude_api_key:
+def _call_openai(prompt: str) -> dict | None:
+    if not settings.openai_api_key:
         return None
     try:
-        client = anthropic.Anthropic(api_key=settings.claude_api_key)
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        client = openai.OpenAI(api_key=settings.openai_api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=512,
             messages=[{"role": "user", "content": prompt}],
         )
-        raw = _strip_fences(message.content[0].text)
+        raw = _strip_fences(response.choices[0].message.content or "")
         return json.loads(raw)
     except Exception:
         return None
@@ -126,7 +126,7 @@ Return JSON only, no markdown fences:
   "connection": "one sentence about unexpected cross-category link"
 }}"""
 
-    data = await asyncio.to_thread(_call_claude, prompt)
+    data = await asyncio.to_thread(_call_openai, prompt)
     if not data:
         return None
 
